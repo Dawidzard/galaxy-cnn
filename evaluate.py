@@ -1,12 +1,14 @@
 """
-Evaluacija sacuvanog modela: metrike, matrice konfuzije i primeri klasifikacije.
+Evaluate a saved model: metrics, confusion matrices, example classifications.
 
-Pokretanje:
+Run:
     python evaluate.py --data-dir images_gz2 --model models/galaxy_cnn_model.keras
 
-VAZNO: --seed i --img-size moraju biti isti kao pri treniranju. Ako nisu,
-validation_split pravi drugaciji split, pa "validacioni" skup sadrzi slike
-na kojima je model treniran i metrike izgledaju bolje nego sto jesu.
+IMPORTANT: --seed and --img-size must match the values used for training.
+validation_split divides the dataset deterministically from the seed, so a
+different seed produces a different split -- and then the "validation" set
+contains images the model was trained on, and every metric looks better
+than it is.
 """
 
 import argparse
@@ -34,8 +36,8 @@ def parse_args():
     p.add_argument('--seed', type=int, default=123,
                    help='Mora biti isti seed kao u train.py (default: 123)')
     p.add_argument('--examples', action='store_true',
-                   help='Sacuvaj i grafik dobro/lose klasifikovanih slika '
-                        '(drzi slike u RAM-u, treba vise memorije)')
+                   help='Also save a plot of correct/incorrect classifications '
+                        '(keeps the images in RAM; needs more memory)')
     return p.parse_args()
 
 
@@ -67,7 +69,7 @@ def print_and_return_metrics(y_true, y_pred, classes, naziv):
     rec = recall_score(y_true, y_pred, average='macro', zero_division=0)
     f1 = f1_score(y_true, y_pred, average='macro', zero_division=0)
     print(f"\n{'=' * 55}\n  METRIKE - {naziv}\n{'=' * 55}")
-    print(f"  Tacnost     (Accuracy) : {acc * 100:.2f}%")
+    print(f"  Accuracy     (Accuracy) : {acc * 100:.2f}%")
     print(f"  Preciznost  (Precision): {prec * 100:.2f}%")
     print(f"  Osetljivost (Recall)   : {rec * 100:.2f}%")
     print(f"  F1-skor                : {f1 * 100:.2f}%")
@@ -82,7 +84,7 @@ def save_metrics(path, classes, train, val):
     with open(path, 'w', encoding='utf-8') as f:
         f.write("METRIKE KLASIFIKACIJE\n" + "=" * 55 + "\n")
         f.write(f"{'Metrika':<25} {'Train':>10} {'Val':>10}\n" + "-" * 45 + "\n")
-        f.write(f"{'Tacnost':<25} {acc_t * 100:>9.2f}% {acc_v * 100:>9.2f}%\n")
+        f.write(f"{'Accuracy':<25} {acc_t * 100:>9.2f}% {acc_v * 100:>9.2f}%\n")
         f.write(f"{'Preciznost (macro)':<25} {prec_t * 100:>9.2f}% {prec_v * 100:>9.2f}%\n")
         f.write(f"{'Osetljivost (macro)':<25} {rec_t * 100:>9.2f}% {rec_v * 100:>9.2f}%\n")
         f.write(f"{'F1-skor (macro)':<25} {f1_t * 100:>9.2f}% {f1_v * 100:>9.2f}%\n")
@@ -152,7 +154,7 @@ def main():
     train_ds, val_ds = load_datasets(args.data_dir, args.img_size,
                                      args.batch_size, args.seed)
     classes = train_ds.class_names
-    print(f"Klase: {classes}")
+    print(f"Classes: {classes}")
 
     print(f"Ucitavam model: {args.model}")
     model = load_model(args.model)
@@ -170,22 +172,22 @@ def main():
     acc_v, prec_v, rec_v, f1_v = print_and_return_metrics(
         y_val_true, y_val_pred, classes, "VALIDACIONI SKUP")
 
-    save_metrics(os.path.join(args.out_dir, 'metrike.txt'), classes,
+    save_metrics(os.path.join(args.out_dir, 'metrics.txt'), classes,
                  (y_train_true, y_train_pred, acc_t, prec_t, rec_t, f1_t),
                  (y_val_true, y_val_pred, acc_v, prec_v, rec_v, f1_v))
 
     plot_confusion_matrices(classes,
                             (y_train_true, y_train_pred),
                             (y_val_true, y_val_pred),
-                            os.path.join(args.out_dir, '05_matrice_konfuzije.png'))
+                            os.path.join(args.out_dir, '05_confusion_matrices.png'))
 
     if args.examples:
         plot_examples(imgs_val, y_val_true, y_val_pred, classes,
-                      'Dobro (zeleno) i lose (crveno) klasifikovane slike',
-                      os.path.join(args.out_dir, '06_primeri_klasifikacije.png'))
+                      'Correct (green) and incorrect (red) classifications',
+                      os.path.join(args.out_dir, '06_classification_examples.png'))
 
     print("\n" + "=" * 55)
-    print(f"  Tacnost     : Train {acc_t * 100:.2f}%  |  Val {acc_v * 100:.2f}%")
+    print(f"  Accuracy     : Train {acc_t * 100:.2f}%  |  Val {acc_v * 100:.2f}%")
     print(f"  Preciznost  : Train {prec_t * 100:.2f}%  |  Val {prec_v * 100:.2f}%")
     print(f"  Osetljivost : Train {rec_t * 100:.2f}%  |  Val {rec_v * 100:.2f}%")
     print(f"  F1-skor     : Train {f1_t * 100:.2f}%  |  Val {f1_v * 100:.2f}%")

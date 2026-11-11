@@ -19,7 +19,7 @@ main_path = 'Galaksije vece'
 img_size = (150, 150)
 batch_size = 64
 
-#Ucitavanje podataka
+#Load the data
 Xtrain, Xval = image_dataset_from_directory(main_path, 
                                       subset='both', 
                                       validation_split=0.2,
@@ -28,10 +28,10 @@ Xtrain, Xval = image_dataset_from_directory(main_path,
                                       shuffle=True,
                                       seed=123)
 
-#Nazivi i broj klasa
+#Class names and count
 classes = Xtrain.class_names
 num_classes = len(classes)
-print(f'Dataset ima sledece klase: {classes}')
+print(f'Dataset classes: {classes}')
 
 #Plotovanje 10 primjeraka
 img, lab = next(iter(Xtrain))
@@ -122,7 +122,7 @@ history = model.fit(Xtrain,
 
 model.save("galaxy_cnn_model_DaveNet2.keras")
 
-#Grafik preciznosti i funckije gubitka
+# Accuracy and loss plots
 plt.figure()
 plt.subplot(121)
 plt.plot(history.history['accuracy'])
@@ -141,7 +141,7 @@ for img, lab in Xval:
     y_true = np.concatenate([y_true, lab.numpy()])
     y_pred = np.concatenate([y_pred, np.argmax(model.predict(img, verbose=0), axis=1)])
 
-print(f"Tačnost modela je: {100 * accuracy_score(y_true, y_pred):.2f}%")
+print(f"Model accuracy: {100 * accuracy_score(y_true, y_pred):.2f}%")
 
 cm = confusion_matrix(y_true, y_pred, normalize='true')
 ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=classes).plot()

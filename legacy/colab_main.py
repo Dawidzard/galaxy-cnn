@@ -45,15 +45,15 @@ train_ds, val_ds = image_dataset_from_directory(
 )
 classes     = train_ds.class_names
 num_classes = len(classes)
-print(f'Klase: {classes}')
+print(f'Classes: {classes}')
 
 # Cache + prefetch — prva epoha ucitava u RAM, ostale idu iz RAM-a
 AUTOTUNE = tf.data.AUTOTUNE
 train_ds = train_ds.prefetch(buffer_size=AUTOTUNE)
 val_ds   = val_ds.prefetch(buffer_size=AUTOTUNE)
 
-# ── Brzo brojanje iz folder strukture (bez citanja slika) ────
-print("\n--- Raspodela po klasama ---")
+# ── Fast count from the folder structure (without reading the images) ────
+print("\n--- Class distribution ---")
 all_counts   = {}
 train_counts = {}
 val_counts   = {}
@@ -72,7 +72,7 @@ for i, cls in enumerate(classes):
 total = sum(all_counts.values())
 for i, cls in enumerate(classes):
     n = all_counts[i]
-    print(f"  {cls}: {n} slika ({100*n/total:.1f}%)")
+    print(f"  {cls}: {n} images ({100*n/total:.1f}%)")
 print(f"Omjer max/min: {max(all_counts.values())/min(all_counts.values()):.2f}")
 
 # ── Class weight iz poznatih brojeva ─────────────────────────
@@ -95,7 +95,7 @@ from sklearn.metrics import (accuracy_score, precision_score, recall_score,
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 
-# ── Drive i folderi ───────────────────────────────────────────
+# ── Drive and folders ───────────────────────────────────────────
 drive_output = '/content/drive/MyDrive/galaxy_rezultati'
 os.makedirs('grafici', exist_ok=True)
 os.makedirs(drive_output, exist_ok=True)
@@ -103,7 +103,7 @@ drive_grafici = os.path.join(drive_output, 'grafici')
 os.makedirs(drive_grafici, exist_ok=True)
 
 def sacuvaj(filename):
-    """Sacuva grafik lokalno i na Drive."""
+    """Save the figure locally and to Drive."""
     local = f'grafici/{filename}'
     plt.savefig(local, dpi=150, bbox_inches='tight')
     shutil.copy(local, os.path.join(drive_grafici, filename))
@@ -118,8 +118,8 @@ counts_val   = [val_counts[i]   for i in range(num_classes)]
 fig, axes = plt.subplots(1, 2, figsize=(13, 5))
 axes[0].bar(classes, [all_counts[i] for i in range(num_classes)],
             color=['#4C72B0','#DD8452','#55A868'])
-axes[0].set_title('Broj uzoraka po klasama (ceo dataset)')
-axes[0].set_ylabel('Broj slika')
+axes[0].set_title('Samples per class (whole dataset)')
+axes[0].set_ylabel('Image count')
 for i, v in enumerate([all_counts[i] for i in range(num_classes)]):
     axes[0].text(i, v + total*0.003, str(v), ha='center', fontweight='bold')
 axes[1].bar(x - w/2, counts_train, w, label='Train', color='#4C72B0')
@@ -127,13 +127,13 @@ axes[1].bar(x + w/2, counts_val,   w, label='Val',   color='#DD8452')
 axes[1].set_xticks(x)
 axes[1].set_xticklabels(classes)
 axes[1].set_title('Train / Validation split')
-axes[1].set_ylabel('Broj slika')
+axes[1].set_ylabel('Image count')
 axes[1].legend()
 plt.tight_layout()
-sacuvaj('01_histogram_klasa.png')
+sacuvaj('01_class_histogram.png')
 plt.show()
 
-# ── Po jedan primerak iz svake klase ─────────────────────────
+# ── One example from each class ─────────────────────────
 samples = {}
 for imgs, labels in train_ds:
     for img, lab in zip(imgs, labels):
@@ -146,13 +146,13 @@ for imgs, labels in train_ds:
         break
 
 fig, axes = plt.subplots(1, num_classes, figsize=(4 * num_classes, 4))
-fig.suptitle('Po jedan primerak iz svake klase', fontsize=14)
+fig.suptitle('One example from each class', fontsize=14)
 for i in range(num_classes):
     axes[i].imshow(samples[i])
     axes[i].set_title(classes[i], fontsize=12)
     axes[i].axis('off')
 plt.tight_layout()
-sacuvaj('02_primeri_klasa.png')
+sacuvaj('02_class_examples.png')
 plt.show()
 
 # ── Augmentacija ──────────────────────────────────────────────
@@ -164,7 +164,7 @@ data_augmentation = Sequential([
 ], name='augmentacija')
 
 fig, axes = plt.subplots(2, 5, figsize=(14, 6))
-fig.suptitle('Primeri augmentovanih slika (klasa: ' + classes[0] + ')', fontsize=13)
+fig.suptitle('Augmented examples (class: ' + classes[0] + ')', fontsize=13)
 for ax in axes.flat:
     aug = data_augmentation(
         tf.expand_dims(tf.cast(samples[0], tf.float32), 0)
@@ -172,7 +172,7 @@ for ax in axes.flat:
     ax.imshow(aug)
     ax.axis('off')
 plt.tight_layout()
-sacuvaj('03_augmentacija.png')
+sacuvaj('03_augmentation.png')
 plt.show()
 
 # ── Model ─────────────────────────────────────────────────────
@@ -233,15 +233,15 @@ model.save('galaxy_cnn_model.keras')
 shutil.copy('galaxy_cnn_model.keras', os.path.join(drive_output, 'galaxy_cnn_model.keras'))
 print("  -> Model sacuvan na Drive ODMAH nakon treniranja!")
 
-# ── Grafik performansi ────────────────────────────────────────
+# ── Performance plots ────────────────────────────────────────
 ep = range(1, len(history.history['accuracy']) + 1)
 fig, axes = plt.subplots(1, 2, figsize=(13, 5))
 fig.suptitle('Performanse tokom treniranja', fontsize=14)
 axes[0].plot(ep, history.history['accuracy'],     label='Train', marker='o', markersize=3)
 axes[0].plot(ep, history.history['val_accuracy'], label='Val',   marker='o', markersize=3)
-axes[0].set_title('Tacnost (Accuracy)')
+axes[0].set_title('Accuracy')
 axes[0].set_xlabel('Epoha')
-axes[0].set_ylabel('Tacnost')
+axes[0].set_ylabel('Accuracy')
 axes[0].legend()
 axes[0].grid(True, alpha=0.3)
 axes[1].plot(ep, history.history['loss'],     label='Train', marker='o', markersize=3)
@@ -252,7 +252,7 @@ axes[1].set_ylabel('Gubitak')
 axes[1].legend()
 axes[1].grid(True, alpha=0.3)
 plt.tight_layout()
-sacuvaj('04_trening_krivulje.png')
+sacuvaj('04_training_curves.png')
 plt.show()
 
 # ── Predikcije ────────────────────────────────────────────────
@@ -278,7 +278,7 @@ def print_and_return_metrics(y_true, y_pred, naziv):
     rec  = recall_score(y_true, y_pred, average='macro', zero_division=0)
     f1   = f1_score(y_true, y_pred, average='macro', zero_division=0)
     print(f"\n{'='*55}\n  METRIKE — {naziv}\n{'='*55}")
-    print(f"  Tacnost     (Accuracy) : {acc*100:.2f}%")
+    print(f"  Accuracy     (Accuracy) : {acc*100:.2f}%")
     print(f"  Preciznost  (Precision): {prec*100:.2f}%")
     print(f"  Osetljivost (Recall)   : {rec*100:.2f}%")
     print(f"  F1-skor                : {f1*100:.2f}%")
@@ -289,10 +289,10 @@ acc_t, prec_t, rec_t, f1_t = print_and_return_metrics(y_train_true, y_train_pred
 acc_v, prec_v, rec_v, f1_v = print_and_return_metrics(y_val_true,   y_val_pred,   "VALIDACIONI SKUP")
 
 # ── Cuvanje metrika ─────────────────────────────────────
-with open(os.path.join(drive_output, 'metrike.txt'), 'w', encoding='utf-8') as f:
+with open(os.path.join(drive_output, 'metrics.txt'), 'w', encoding='utf-8') as f:
     f.write("METRIKE KLASIFIKACIJE\n" + "="*55 + "\n")
     f.write(f"{'Metrika':<25} {'Train':>10} {'Val':>10}\n" + "-"*45 + "\n")
-    f.write(f"{'Tacnost':<25} {acc_t*100:>9.2f}% {acc_v*100:>9.2f}%\n")
+    f.write(f"{'Accuracy':<25} {acc_t*100:>9.2f}% {acc_v*100:>9.2f}%\n")
     f.write(f"{'Preciznost (macro)':<25} {prec_t*100:>9.2f}% {prec_v*100:>9.2f}%\n")
     f.write(f"{'Osetljivost (macro)':<25} {rec_t*100:>9.2f}% {rec_v*100:>9.2f}%\n")
     f.write(f"{'F1-skor (macro)':<25} {f1_t*100:>9.2f}% {f1_v*100:>9.2f}%\n")
@@ -314,10 +314,10 @@ for ax, y_t, y_p, title in [
     disp.plot(ax=ax, colorbar=False, cmap='Blues', values_format='.2f')
     ax.set_title(title)
 plt.tight_layout()
-sacuvaj('05_matrice_konfuzije.png')
+sacuvaj('05_confusion_matrices.png')
 plt.show()
 
-# ── Dobro i lose klasifikovane slike ──────────────────────────
+# ── Correct and incorrect classifications ──────────────────────────
 def show_examples(imgs, y_true, y_pred, title, filename, n=5):
     correct_idx = np.where(y_true == y_pred)[0]
     wrong_idx   = np.where(y_true != y_pred)[0]
@@ -349,13 +349,13 @@ def show_examples(imgs, y_true, y_pred, title, filename, n=5):
     plt.show()
 
 show_examples(imgs_val, y_val_true, y_val_pred,
-              'Dobro (zeleno) i lose (crveno) klasifikovane slike',
-              '06_primeri_klasifikacije.png', n=5)
+              'Correct (green) and incorrect (red) classifications',
+              '06_classification_examples.png', n=5)
 
 # ── Zavrsni ispis ─────────────────────────────────────────────
 print(f"\nSve sacuvano na Drive: {drive_output}")
 print("="*55)
-print(f"  Tacnost     : Train {acc_t*100:.2f}%  |  Val {acc_v*100:.2f}%")
+print(f"  Accuracy     : Train {acc_t*100:.2f}%  |  Val {acc_v*100:.2f}%")
 print(f"  Preciznost  : Train {prec_t*100:.2f}%  |  Val {prec_v*100:.2f}%")
 print(f"  Osetljivost : Train {rec_t*100:.2f}%  |  Val {rec_v*100:.2f}%")
 print(f"  F1-skor     : Train {f1_t*100:.2f}%  |  Val {f1_v*100:.2f}%")
@@ -402,7 +402,7 @@ val_ds = tf.keras.utils.image_dataset_from_directory(
 
 classes = train_ds.class_names
 num_classes = len(classes)
-print(f"Klase: {classes}, Broj klasa: {num_classes}")
+print(f"Classes: {classes}, Class count: {num_classes}")
 
 # ── 3. Ucitaj sacuvani model ─────────────────────────────────
 import shutil, gc
@@ -453,7 +453,7 @@ def print_and_return_metrics(y_true, y_pred, naziv):
     rec  = recall_score(y_true, y_pred, average='macro', zero_division=0)
     f1   = f1_score(y_true, y_pred, average='macro', zero_division=0)
     print(f"\n{'='*55}\n  METRIKE — {naziv}\n{'='*55}")
-    print(f"  Tacnost     (Accuracy) : {acc*100:.2f}%")
+    print(f"  Accuracy     (Accuracy) : {acc*100:.2f}%")
     print(f"  Preciznost  (Precision): {prec*100:.2f}%")
     print(f"  Osetljivost (Recall)   : {rec*100:.2f}%")
     print(f"  F1-skor                : {f1*100:.2f}%")
@@ -464,10 +464,10 @@ acc_t, prec_t, rec_t, f1_t = print_and_return_metrics(y_train_true, y_train_pred
 acc_v, prec_v, rec_v, f1_v = print_and_return_metrics(y_val_true,   y_val_pred,   "VALIDACIONI SKUP")
 
 # ── 7. Sacuvaj metrike ───────────────────────────────────────
-with open(os.path.join(drive_output, 'metrike.txt'), 'w', encoding='utf-8') as f:
+with open(os.path.join(drive_output, 'metrics.txt'), 'w', encoding='utf-8') as f:
     f.write("METRIKE KLASIFIKACIJE\n" + "="*55 + "\n")
     f.write(f"{'Metrika':<25} {'Train':>10} {'Val':>10}\n" + "-"*45 + "\n")
-    f.write(f"{'Tacnost':<25} {acc_t*100:>9.2f}% {acc_v*100:>9.2f}%\n")
+    f.write(f"{'Accuracy':<25} {acc_t*100:>9.2f}% {acc_v*100:>9.2f}%\n")
     f.write(f"{'Preciznost (macro)':<25} {prec_t*100:>9.2f}% {prec_v*100:>9.2f}%\n")
     f.write(f"{'Osetljivost (macro)':<25} {rec_t*100:>9.2f}% {rec_v*100:>9.2f}%\n")
     f.write(f"{'F1-skor (macro)':<25} {f1_t*100:>9.2f}% {f1_v*100:>9.2f}%\n")
@@ -489,10 +489,10 @@ for ax, y_t, y_p, title in [
     disp.plot(ax=ax, colorbar=False, cmap='Blues', values_format='.2f')
     ax.set_title(title)
 plt.tight_layout()
-sacuvaj('05_matrice_konfuzije.png')
+sacuvaj('05_confusion_matrices.png')
 plt.show()
 
-# ── 9. Dobro i lose klasifikovane slike ─────────
+# ── 9. Correct and incorrect classifications ─────────
 def show_examples_light(ds, y_true, y_pred, title, filename, n=5):
     correct_idx = set(np.random.default_rng(42).choice(
         np.where(y_true == y_pred)[0], min(n, np.sum(y_true == y_pred)), replace=False))
@@ -542,13 +542,13 @@ def show_examples_light(ds, y_true, y_pred, title, filename, n=5):
     gc.collect()
 
 show_examples_light(val_ds, y_val_true, y_val_pred,
-                    'Dobro (zeleno) i lose (crveno) klasifikovane slike',
-                    '06_primeri_klasifikacije.png', n=5)
+                    'Correct (green) and incorrect (red) classifications',
+                    '06_classification_examples.png', n=5)
 
 # ── 10. Zavrsni ispis ────────────────────────────────────────
 print(f"\nSve sacuvano na Drive: {drive_output}")
 print("="*55)
-print(f"  Tacnost     : Train {acc_t*100:.2f}%  |  Val {acc_v*100:.2f}%")
+print(f"  Accuracy     : Train {acc_t*100:.2f}%  |  Val {acc_v*100:.2f}%")
 print(f"  Preciznost  : Train {prec_t*100:.2f}%  |  Val {prec_v*100:.2f}%")
 print(f"  Osetljivost : Train {rec_t*100:.2f}%  |  Val {rec_v*100:.2f}%")
 print(f"  F1-skor     : Train {f1_t*100:.2f}%  |  Val {f1_v*100:.2f}%")

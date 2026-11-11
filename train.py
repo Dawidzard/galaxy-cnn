@@ -1,19 +1,20 @@
 """
-Treniranje CNN modela za morfolosku klasifikaciju galaksija (Galaxy Zoo 2).
+Train the CNN for galaxy morphology classification (Galaxy Zoo 2).
 
-Klase: Barred / Elliptical / Spiral
-Ocekivana struktura podataka:
+Classes: Barred / Elliptical / Spiral
+
+Expected layout:
 
     images_gz2/
         Barred/      *.jpg
         Elliptical/  *.jpg
         Spiral/      *.jpg
 
-Pokretanje:
+Run:
     python train.py --data-dir images_gz2
 
-Arhitektura i hiperparametri su identicni onima kojima je istreniran
-models/galaxy_cnn_model.keras (rezultati u results/).
+The architecture and hyperparameters here are the ones that produced
+models/galaxy_cnn_model.keras; its figures are in results/.
 """
 
 import argparse
@@ -38,9 +39,9 @@ def parse_args():
     p.add_argument('--out-dir', default='results',
                    help='Gde se cuvaju grafici (default: results)')
     p.add_argument('--model-out', default='models/galaxy_cnn_model.keras',
-                   help='Putanja za sacuvani model')
+                   help='Path to the saved model')
     p.add_argument('--img-size', type=int, default=96,
-                   help='Dimenzija slike, NxN (default: 96)')
+                   help='Image size, NxN (default: 96)')
     p.add_argument('--batch-size', type=int, default=128)
     p.add_argument('--epochs', type=int, default=50)
     p.add_argument('--patience', type=int, default=10,
@@ -52,7 +53,7 @@ def parse_args():
 
 
 def count_images_per_class(data_dir, classes, val_split=0.2):
-    """Brzo brojanje iz strukture foldera, bez citanja samih slika."""
+    """Fast count from the folder structure, without reading the images."""
     all_counts, train_counts, val_counts = {}, {}, {}
     for i, cls in enumerate(classes):
         cls_path = os.path.join(data_dir, cls)
@@ -124,8 +125,8 @@ def plot_class_histogram(classes, all_counts, train_counts, val_counts, out_path
     fig, axes = plt.subplots(1, 2, figsize=(13, 5))
     axes[0].bar(classes, [all_counts[i] for i in range(num_classes)],
                 color=['#4C72B0', '#DD8452', '#55A868'])
-    axes[0].set_title('Broj uzoraka po klasama (ceo dataset)')
-    axes[0].set_ylabel('Broj slika')
+    axes[0].set_title('Samples per class (whole dataset)')
+    axes[0].set_ylabel('Image count')
     for i in range(num_classes):
         v = all_counts[i]
         axes[0].text(i, v + total * 0.003, str(v), ha='center', fontweight='bold')
@@ -137,7 +138,7 @@ def plot_class_histogram(classes, all_counts, train_counts, val_counts, out_path
     axes[1].set_xticks(x)
     axes[1].set_xticklabels(classes)
     axes[1].set_title('Train / Validation split')
-    axes[1].set_ylabel('Broj slika')
+    axes[1].set_ylabel('Image count')
     axes[1].legend()
 
     plt.tight_layout()
@@ -147,7 +148,7 @@ def plot_class_histogram(classes, all_counts, train_counts, val_counts, out_path
 
 
 def plot_class_samples(train_ds, classes, out_path):
-    """Po jedan primerak iz svake klase."""
+    """One example from each class."""
     num_classes = len(classes)
     samples = {}
     for imgs, labels in train_ds:
@@ -157,7 +158,7 @@ def plot_class_samples(train_ds, classes, out_path):
             break
 
     fig, axes = plt.subplots(1, num_classes, figsize=(4 * num_classes, 4))
-    fig.suptitle('Po jedan primerak iz svake klase', fontsize=14)
+    fig.suptitle('One example from each class', fontsize=14)
     for i in range(num_classes):
         axes[i].imshow(samples[i])
         axes[i].set_title(classes[i], fontsize=12)
@@ -171,7 +172,7 @@ def plot_class_samples(train_ds, classes, out_path):
 
 def plot_augmentation(data_augmentation, sample, class_name, out_path):
     fig, axes = plt.subplots(2, 5, figsize=(14, 6))
-    fig.suptitle(f'Primeri augmentovanih slika (klasa: {class_name})', fontsize=13)
+    fig.suptitle(f'Augmented examples (class: {class_name})', fontsize=13)
     for ax in axes.flat:
         aug = data_augmentation(
             tf.expand_dims(tf.cast(sample, tf.float32), 0)
@@ -191,9 +192,9 @@ def plot_history(history, out_path):
 
     axes[0].plot(ep, history.history['accuracy'], label='Train', marker='o', markersize=3)
     axes[0].plot(ep, history.history['val_accuracy'], label='Val', marker='o', markersize=3)
-    axes[0].set_title('Tacnost (Accuracy)')
+    axes[0].set_title('Accuracy')
     axes[0].set_xlabel('Epoha')
-    axes[0].set_ylabel('Tacnost')
+    axes[0].set_ylabel('Accuracy')
     axes[0].legend()
     axes[0].grid(True, alpha=0.3)
 
@@ -218,7 +219,7 @@ def main():
     os.makedirs(args.out_dir, exist_ok=True)
     os.makedirs(os.path.dirname(args.model_out) or '.', exist_ok=True)
 
-    # Ucitavanje podataka
+    # Load the data
     train_ds, val_ds = image_dataset_from_directory(
         args.data_dir, subset='both', validation_split=0.2,
         image_size=img_size, batch_size=args.batch_size,
@@ -226,19 +227,19 @@ def main():
     )
     classes = train_ds.class_names
     num_classes = len(classes)
-    print(f'Klase: {classes}')
+    print(f'Classes: {classes}')
 
-    # Prefetch: prva epoha ucitava, ostale idu iz pipeline bafera
+    # Prefetch: the first epoch reads from disk, later ones come from the pipeline buffer
     AUTOTUNE = tf.data.AUTOTUNE
     train_ds = train_ds.prefetch(buffer_size=AUTOTUNE)
     val_ds = val_ds.prefetch(buffer_size=AUTOTUNE)
 
-    # Raspodela po klasama
-    print("\n--- Raspodela po klasama ---")
+    # Class distribution
+    print("\n--- Class distribution ---")
     all_counts, train_counts, val_counts = count_images_per_class(args.data_dir, classes)
     total = sum(all_counts.values())
     for i, cls in enumerate(classes):
-        print(f"  {cls}: {all_counts[i]} slika ({100 * all_counts[i] / total:.1f}%)")
+        print(f"  {cls}: {all_counts[i]} images ({100 * all_counts[i] / total:.1f}%)")
     print(f"Omjer max/min: {max(all_counts.values()) / min(all_counts.values()):.2f}")
 
     # Class weights (dataset je neizbalansiran)
@@ -250,13 +251,13 @@ def main():
 
     # Grafici pre treniranja
     plot_class_histogram(classes, all_counts, train_counts, val_counts,
-                         os.path.join(args.out_dir, '01_histogram_klasa.png'))
+                         os.path.join(args.out_dir, '01_class_histogram.png'))
     samples = plot_class_samples(train_ds, classes,
-                                 os.path.join(args.out_dir, '02_primeri_klasa.png'))
+                                 os.path.join(args.out_dir, '02_class_examples.png'))
 
     data_augmentation = build_augmentation(args.img_size)
     plot_augmentation(data_augmentation, samples[0], classes[0],
-                      os.path.join(args.out_dir, '03_augmentacija.png'))
+                      os.path.join(args.out_dir, '03_augmentation.png'))
 
     # Model
     model = build_model(num_classes, data_augmentation)
@@ -275,7 +276,7 @@ def main():
     model.save(args.model_out)
     print(f"  -> Model sacuvan: {args.model_out}")
 
-    plot_history(history, os.path.join(args.out_dir, '04_trening_krivulje.png'))
+    plot_history(history, os.path.join(args.out_dir, '04_training_curves.png'))
 
     print("\nTreniranje zavrseno. Za metrike i matrice konfuzije pokreni:")
     print(f"    python evaluate.py --data-dir {args.data_dir} "

@@ -1,120 +1,121 @@
-# Galaxy CNN — morfološka klasifikacija galaksija
+# Galaxy CNN — galaxy morphology classification
 
-Konvolutivna neuronska mreža koja klasifikuje slike galaksija iz **Galaxy Zoo 2** u tri
-morfološke klase: **Barred** (spiralna sa prečkom), **Elliptical** (eliptična) i
-**Spiral** (spiralna bez prečke).
+A convolutional neural network that sorts **Galaxy Zoo 2** images into three
+morphological classes: **Barred** (barred spiral), **Elliptical**, and **Spiral**
+(spiral without a bar).
 
-Projektni rad iz predmeta Neuralne mreže na Elektrotehničkom fakultetu Univerziteta u Beogradu.
+Coursework for Neural Networks at the School of Electrical Engineering, University
+of Belgrade.
 
-## Autori
+## Authors
 
 - **Aleksa Mikić** ([@AleksaMikic](https://github.com/AleksaMikic))
 - **David M. Marković** ([@Dawidzard](https://github.com/Dawidzard))
 
-Projekat je zajednički izrađen prije objavljivanja repozitorijuma na GitHubu.
+The project was built jointly, before the repository was published on GitHub.
 
-Brojevi indeksa: `203/2023`, `134/2023`.
+Student numbers: `203/2023`, `134/2023`.
 
 ---
 
-## Rezultati
+## Results
 
-Model je treniran na **239.029 slika** (80% trening / 20% validacija).
+Trained on **239,029 images** (80% train / 20% validation).
 
-| Metrika | Trening | Validacija |
+| Metric | Train | Validation |
 |---|---|---|
-| Tačnost | 75.14% | **75.10%** |
-| Preciznost (macro) | 73.90% | 73.97% |
-| Osetljivost (macro) | 73.99% | 73.91% |
-| F1-skor (macro) | 73.62% | 73.62% |
+| Accuracy | 75.14% | **75.10%** |
+| Precision (macro) | 73.90% | 73.97% |
+| Recall (macro) | 73.99% | 73.91% |
+| F1 (macro) | 73.62% | 73.62% |
 
-Po klasama (validacija):
+Per class, on validation:
 
-| Klasa | Precision | Recall | F1 | Broj slika |
+| Class | Precision | Recall | F1 | Images |
 |---|---|---|---|---|
-| Barred | 0.68 | 0.69 | 0.69 | 9.166 |
-| Elliptical | 0.77 | 0.88 | 0.82 | 19.578 |
-| Spiral | 0.77 | 0.65 | 0.70 | 19.061 |
+| Barred | 0.68 | 0.69 | 0.69 | 9,166 |
+| Elliptical | 0.77 | 0.88 | 0.82 | 19,578 |
+| Spiral | 0.77 | 0.65 | 0.70 | 19,061 |
 
-Trening i validacija su praktično identični (75.14% vs 75.10%), što znači da model
-**ne overfituje** — ograničenje je kapacitet/rezolucija, ne memorisanje. Najslabija
-klasa je `Barred`: prečka je fina struktura koja se na 96×96 piksela često izgubi, a
-ta klasa je i najmanje zastupljena u datasetu (19% uzoraka).
+Train and validation are practically identical (75.14% against 75.10%), so the model
+is **not overfitting** — what limits it is capacity and resolution, not memorisation.
+The weakest class is `Barred`: the bar is a fine central structure that is often lost
+at 96×96, and it is also the least represented class in the dataset (19% of samples).
 
-Grafici i pun `classification_report` su u [`results/`](results/):
+Figures and the full `classification_report` are in [`results/`](results/):
 
-| Fajl | Sadržaj |
+| File | Contents |
 |---|---|
-| `01_histogram_klasa.png` | Raspodela po klasama i train/val split |
-| `02_primeri_klasa.png` | Po jedan primerak iz svake klase |
-| `03_augmentacija.png` | Primeri augmentovanih slika |
-| `04_trening_krivulje.png` | Tačnost i gubitak po epohama |
-| `05_matrice_konfuzije.png` | Matrice konfuzije (normalizovane) |
-| `06_primeri_klasifikacije.png` | Dobro (zeleno) i loše (crveno) klasifikovane slike |
-| `metrike.txt` | Metrike i izveštaj po klasama |
+| `01_class_histogram.png` | Class distribution and the train/validation split |
+| `02_class_examples.png` | One example from each class |
+| `03_augmentation.png` | Augmented examples |
+| `04_training_curves.png` | Accuracy and loss per epoch |
+| `05_confusion_matrices.png` | Confusion matrices, normalised |
+| `06_classification_examples.png` | Correct (green) and incorrect (red) classifications |
+| `metrics.txt` | Metrics and the per-class report |
 
-Pun izveštaj: [`docs/Izvjestaj.pdf`](docs/Izvjestaj.pdf)
+Full write-up: [`docs/report-sr.pdf`](docs/report-sr.pdf) — in Serbian.
 
 ---
 
-## Arhitektura
+## Architecture
 
-`GalaxyCNN` — 7 konvolutivnih slojeva u 4 bloka, sa augmentacijom i normalizacijom
-ugrađenim u sam model:
+`GalaxyCNN` — seven convolutional layers in four blocks, with augmentation and
+normalisation built into the model itself:
 
 ```
-Augmentacija (RandomFlip h+v, RandomRotation 0.3, RandomZoom 0.1)
+Augmentation (RandomFlip h+v, RandomRotation 0.3, RandomZoom 0.1)
 Rescaling(1/255)
 
-Conv2D(32)  + BN  →  Conv2D(32)  + BN  →  MaxPool
-Conv2D(64)  + BN  →  Conv2D(64)  + BN  →  MaxPool
-Conv2D(128) + BN  →  Conv2D(128) + BN  →  MaxPool
-Conv2D(256) + BN  →  MaxPool
+Conv2D(32)  + BN  ->  Conv2D(32)  + BN  ->  MaxPool
+Conv2D(64)  + BN  ->  Conv2D(64)  + BN  ->  MaxPool
+Conv2D(128) + BN  ->  Conv2D(128) + BN  ->  MaxPool
+Conv2D(256) + BN  ->  MaxPool
 
-Dropout(0.4) → Flatten → Dense(256, relu) → Dropout(0.4) → Dense(3, softmax)
+Dropout(0.4) -> Flatten -> Dense(256, relu) -> Dropout(0.4) -> Dense(3, softmax)
 ```
 
-Svi `Conv2D` su 3×3, `padding='same'`, aktivacija ReLU.
+Every `Conv2D` is 3×3, `padding='same'`, ReLU.
 
-| Hiperparametar | Vrednost |
+| Hyperparameter | Value |
 |---|---|
-| Dimenzija slike | 96 × 96 |
+| Image size | 96 × 96 |
 | Batch size | 128 |
-| Optimizator | Adam (default lr = 0.001) |
+| Optimiser | Adam (default lr = 0.001) |
 | Loss | SparseCategoricalCrossentropy |
-| Epohe | 50 (sa EarlyStopping, `patience=10` na `val_accuracy`) |
-| Class weights | `balanced` (dataset je neizbalansiran) |
-| Seed za split | 123 |
+| Epochs | 50, with EarlyStopping (`patience=10` on `val_accuracy`) |
+| Class weights | `balanced` — the dataset is not |
+| Split seed | 123 |
 
-Pošto su augmentacija i `Rescaling` **slojevi modela**, slike se pri inferenciji
-prosleđuju u opsegu `[0, 255]` — ne treba ih ručno deliti sa 255.
+Because augmentation and `Rescaling` are **layers of the model**, images are passed
+in at inference in the `[0, 255]` range — do not divide them by 255 yourself.
 
 ---
 
-## Struktura repozitorijuma
+## Repository layout
 
 ```
 .
-├── train.py              # Treniranje modela od nule
-├── evaluate.py           # Metrike, matrice konfuzije, primeri klasifikacije
-├── predict.py            # Klasifikacija jedne slike ili celog foldera
-├── prepare_dataset.py    # Sortira GZ2 slike u foldere po klasama
+├── train.py              # Train the model from scratch
+├── evaluate.py           # Metrics, confusion matrices, example classifications
+├── predict.py            # Classify one image or a whole folder
+├── prepare_dataset.py    # Sort GZ2 images into one folder per class
 ├── models/
-│   └── galaxy_cnn_model.keras   # Istrenirani model (35 MB)
-├── results/              # Grafici i metrike
+│   └── galaxy_cnn_model.keras   # The trained model (35 MB)
+├── results/              # Figures and metrics
 ├── docs/
-│   └── Izvjestaj.pdf     # Izveštaj projekta
+│   └── report-sr.pdf     # Project report, in Serbian
 ├── data/
-│   ├── README.md         # Kako nabaviti dataset + citiranje
-│   └── GALAXY_ZOO_README.txt    # Originalni README Galaxy Zoo tima
-└── legacy/               # Originalne skripte kakve su pokretane (reference)
+│   ├── README.md         # How to obtain the dataset, and how to cite it
+│   └── GALAXY_ZOO_README.txt    # The Galaxy Zoo team's own README
+└── legacy/               # The original scripts as they were run, for reference
 ```
 
 ---
 
-## Pokretanje
+## Running it
 
-### 1. Instalacija
+### 1. Install
 
 ```bash
 python -m venv .venv
@@ -123,71 +124,71 @@ python -m venv .venv
 pip install -r requirements.txt
 ```
 
-### 2. Klasifikacija slike istreniranim modelom
+### 2. Classify an image with the trained model
 
-Ne traži dataset — model je u repozitorijumu:
+No dataset needed — the model is in the repository:
 
 ```bash
-python predict.py moja_galaksija.jpg
+python predict.py my_galaxy.jpg
 ```
 
 ```
-moja_galaksija.jpg
-  Predikcija: Spiral (82.4% sigurnosti)
-  Raspodela:  Barred:  11.3%  Elliptical:   6.3%  Spiral:  82.4%
+my_galaxy.jpg
+  Prediction: Spiral (82.4% confidence)
+  Breakdown:  Barred:  11.3%  Elliptical:   6.3%  Spiral:  82.4%
 ```
 
-### 3. Priprema dataseta (za treniranje)
+### 3. Prepare the dataset, to train
 
-Dataset nije u repozitorijumu (243.434 slike, ~5 GB). Preuzimanje i citiranje su
-opisani u [`data/README.md`](data/README.md). Kad raspakuješ `images_gz2.zip` i
-preuzmeš CSV sa klasama:
+The dataset is not in the repository (243,434 images, about 5 GB). Downloading and
+citing it are covered in [`data/README.md`](data/README.md). Once `images_gz2.zip`
+is unpacked and the class CSV downloaded:
 
 ```bash
 python prepare_dataset.py --images-dir images --csv gz2_classes.csv --out-dir images_gz2
 ```
 
-Dobija se:
+which gives:
 
 ```
 images_gz2/
-    Barred/      ~45.600 slika
-    Elliptical/  ~97.600 slika
-    Spiral/      ~95.800 slika
+    Barred/      ~45,600 images
+    Elliptical/  ~97,600 images
+    Spiral/      ~95,800 images
 ```
 
-### 4. Treniranje
+### 4. Train
 
 ```bash
 python train.py --data-dir images_gz2
 ```
 
-Trening na celom datasetu je rađen na Google Colab GPU-u. Na CPU-u traje
-nerealno dugo — za probu smanji dataset (`--limit-per-class` u `prepare_dataset.py`)
-ili broj epoha.
+Training on the full dataset was done on a Google Colab GPU. On a CPU it takes
+unreasonably long — to try it out, shrink the dataset (`--limit-per-class` in
+`prepare_dataset.py`) or cut the epochs.
 
-### 5. Evaluacija
+### 5. Evaluate
 
 ```bash
 python evaluate.py --data-dir images_gz2 --model models/galaxy_cnn_model.keras
 ```
 
-> **Važno:** `--seed` i `--img-size` moraju biti isti kao pri treniranju (123 i 96).
-> `validation_split` deli dataset deterministički na osnovu seed-a, pa drugi seed daje
-> drugi split — i tada "validacioni" skup sadrži slike na kojima je model treniran,
-> zbog čega metrike izgledaju bolje nego što jesu.
+> **Important:** `--seed` and `--img-size` must match the values used for training
+> (123 and 96). `validation_split` divides the dataset deterministically from the
+> seed, so a different seed gives a different split — and then the "validation" set
+> contains images the model was trained on, and the metrics look better than they are.
 
 ---
 
-## Dataset i citiranje
+## Dataset and citation
 
-Slike i oznake dolaze iz **Galaxy Zoo 2** i nisu naš rad. Ako koristiš dataset,
-citiraj radove navedene u [`data/README.md`](data/README.md) — Willett et al. (2013)
-i Hart et al. (2016).
+The images and labels come from **Galaxy Zoo 2** and are not our work. If you use the
+dataset, cite the papers listed in [`data/README.md`](data/README.md) — Willett et al.
+(2013) and Hart et al. (2016).
 
-## Napomene
+## Notes
 
-- `models/galaxy_cnn_model.keras` je 35 MB i commitovan je kao običan fajl (ispod
-  GitHub limita od 100 MB), bez Git LFS-a.
-- Grafici u `results/` su iz originalnog Colab treninga, ne iz ponovnog pokretanja
-  ovih skripti.
+- `models/galaxy_cnn_model.keras` is 35 MB and is committed as an ordinary file (under
+  GitHub's 100 MB limit), without Git LFS.
+- The figures in `results/` come from the original Colab run, not from re-running
+  these scripts.

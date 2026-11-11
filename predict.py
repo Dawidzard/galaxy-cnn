@@ -1,12 +1,12 @@
 """
-Klasifikacija jedne slike (ili svih slika u folderu) sacuvanim modelom.
+Classify one image, or every image in a folder, with a saved model.
 
-Pokretanje:
-    python predict.py slika.jpg
-    python predict.py moj_folder/ --model models/galaxy_cnn_model.keras
+Run:
+    python predict.py image.jpg
+    python predict.py my_folder/ --model models/galaxy_cnn_model.keras
 
-Napomena: model sadrzi Rescaling(1./255) kao sloj, pa se slika NE deli sa 255
-pre predikcije - prosledjuje se u opsegu [0, 255].
+Note: the model carries Rescaling(1./255) as a layer, so an image is NOT
+divided by 255 before prediction -- it is passed in the [0, 255] range.
 """
 
 import argparse
@@ -15,8 +15,8 @@ import os
 import numpy as np
 import tensorflow as tf
 
-# Redosled klasa je alfabetski, isti kao sto ih image_dataset_from_directory
-# dodeljuje iz imena foldera pri treniranju.
+# Class order is alphabetical, the same order image_dataset_from_directory
+# assigns from the folder names during training.
 CLASS_NAMES = ["Barred", "Elliptical", "Spiral"]
 
 IMAGE_EXT = ('.jpg', '.jpeg', '.png')
@@ -24,7 +24,7 @@ IMAGE_EXT = ('.jpg', '.jpeg', '.png')
 
 def parse_args():
     p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument('path', help='Slika ili folder sa slikama')
+    p.add_argument('path', help='An image, or a folder of images')
     p.add_argument('--model', default='models/galaxy_cnn_model.keras')
     p.add_argument('--img-size', type=int, default=96,
                    help='Mora odgovarati treningu (default: 96)')
@@ -51,7 +51,7 @@ def main():
 
     images = collect_images(args.path)
     if not images:
-        print(f"Nema slika u: {args.path}")
+        print(f"No images in: {args.path}")
         return
 
     print(f"Ucitavam model: {args.model}")

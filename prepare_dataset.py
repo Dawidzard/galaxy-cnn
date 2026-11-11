@@ -1,25 +1,26 @@
 """
-Priprema dataseta: sortira Galaxy Zoo 2 slike u foldere po klasama.
+Sort the Galaxy Zoo 2 images into one folder per class.
 
-Ulaz:
-  - folder sa raspakovanim GZ2 slikama (imena fajlova su asset_id, npr. 16.jpg)
-  - CSV sa kolonama asset_id,gz2_class
+Input:
+  - a folder of unpacked GZ2 images (each file named after its asset_id,
+    for example 16.jpg)
+  - a CSV with the columns asset_id,gz2_class
     (gz2_objid_assetid_gz2class_all_samples_one_image_trimmed.csv)
 
-Izlaz:
+Output:
     images_gz2/
         Barred/  Elliptical/  Spiral/
 
-Mapiranje GZ2 klase u tri kategorije:
-    gz2_class pocinje sa 'E'   -> Elliptical   (Er, Ei, Ec, ...)
-    gz2_class pocinje sa 'SB'  -> Barred       (SBa, SBc2m, ...)
-    gz2_class pocinje sa 'S'   -> Spiral       (Sb, Sc1t, Sen, ...)
-    ostalo ('A' = artefakt/zvezda) -> preskace se
+GZ2 codes map to three classes by their first letters:
+    starts with 'E'   -> Elliptical   (Er, Ei, Ec, ...)
+    starts with 'SB'  -> Barred       (SBa, SBc2m, ...)
+    starts with 'S'   -> Spiral       (Sb, Sc1t, Sen, ...)
+    anything else ('A' = artefact / star) is skipped
 
-Pokretanje:
+Run:
     python prepare_dataset.py --images-dir images --csv gz2_classes.csv
 
-Podaci se preuzimaju sa https://data.galaxyzoo.org (vidi data/README.md).
+The data comes from https://data.galaxyzoo.org -- see data/README.md.
 """
 
 import argparse
@@ -42,12 +43,12 @@ def parse_args():
     p.add_argument('--move', action='store_true',
                    help='Premesti fajlove umesto kopiranja (brze, stedi prostor)')
     p.add_argument('--limit-per-class', type=int, default=None,
-                   help='Uzmi najvise N slika po klasi (za balansiran podskup)')
+                   help='Take at most N images per class (for a balanced subset)')
     return p.parse_args()
 
 
 def map_gz2_class(gz2_class):
-    """Vraca ime klase ili None ako slika ne ulazi u dataset."""
+    """Return the class name, or None if the image is not part of the dataset."""
     c = gz2_class.strip()
     if c.startswith('E'):
         return 'Elliptical'
@@ -59,7 +60,7 @@ def map_gz2_class(gz2_class):
 
 
 def index_images(images_dir):
-    """asset_id -> putanja do fajla."""
+    """asset_id -> file path."""
     index = {}
     for name in os.listdir(images_dir):
         stem, ext = os.path.splitext(name)
@@ -74,9 +75,9 @@ def main():
     for cls in CLASS_DIRS:
         os.makedirs(os.path.join(args.out_dir, cls), exist_ok=True)
 
-    print(f"Indeksiram slike iz {args.images_dir} ...")
+    print(f"Indexing images from {args.images_dir} ...")
     images = index_images(args.images_dir)
-    print(f"  Nadjeno {len(images)} slika.")
+    print(f"  Found {len(images)} images.")
 
     counts = {cls: 0 for cls in CLASS_DIRS}
     skipped_class = 0
@@ -106,10 +107,10 @@ def main():
     print("\n--- Rezultat ---")
     total = sum(counts.values())
     for cls in CLASS_DIRS:
-        print(f"  {cls:<12} {counts[cls]:>7} slika")
-    print(f"  {'UKUPNO':<12} {total:>7} slika")
-    print(f"\n  Preskoceno (klasa A / nepoznata): {skipped_class}")
-    print(f"  Nema slike za asset_id u CSV-u  : {missing_image}")
+        print(f"  {cls:<12} {counts[cls]:>7} images")
+    print(f"  {'TOTAL':<12} {total:>7} images")
+    print(f"\n  Skipped (class A / unknown): {skipped_class}")
+    print(f"  No image for the CSV asset_id  : {missing_image}")
     print(f"\nDataset je u: {args.out_dir}")
 
 

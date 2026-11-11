@@ -2,7 +2,7 @@ METRIKE KLASIFIKACIJE
 =======================================================
 Metrika                        Train        Val
 ---------------------------------------------
-Tacnost                       75.14%     75.10%
+Accuracy                       75.14%     75.10%
 Preciznost (macro)            73.90%     73.97%
 Osetljivost (macro)           73.99%     73.91%
 F1-skor (macro)               73.62%     73.62%

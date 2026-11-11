@@ -1,27 +1,28 @@
 # legacy/
 
-Originalne skripte, onakve kakve su pokretane tokom rada na projektu. Ostavljene su
-kao referenca — za pokretanje koristiti `train.py`, `evaluate.py` i `predict.py` u
-korenu repozitorijuma.
+The original scripts, exactly as they were run while the project was being built.
+They are kept for reference — to actually run anything, use `train.py`,
+`evaluate.py` and `predict.py` in the repository root.
 
 ## `colab_main.py`
 
-Finalna skripta iz Google Colab-a kojom je istreniran `models/galaxy_cnn_model.keras`
-i kojom su napravljeni grafici u `results/`. Export iz notebook-a, pa sadrzi
-ponovljene import-e, `drive.mount()` i `/content/...` putanje.
+The final Google Colab script: the one that trained `models/galaxy_cnn_model.keras`
+and produced the figures in `results/`. It is an export from a notebook, so it still
+carries repeated imports, `drive.mount()` and `/content/...` paths.
 
-Sastoji se od dva prolaza:
+It runs in two passes:
 
-1. priprema podataka, treniranje i cuvanje modela (`seed=123`, `batch_size=128`)
-2. ponovno ucitavanje sacuvanog modela i evaluacija (`seed=42`, `batch_size=32`)
+1. prepare the data, train, and save the model (`seed=123`, `batch_size=128`)
+2. reload the saved model and evaluate it (`seed=42`, `batch_size=32`)
 
-Drugi prolaz koristi **drugi seed od treninga**, pa `validation_split` tu pravi
-drugaciji split pa je deo "validacionih" slika model vec video u treningu. Zato
-`evaluate.py` ima `--seed 123` kao default i upozorenje da seed mora odgovarati
-treningu.
+The second pass uses **a different seed from the first**, so `validation_split`
+divides the dataset differently there and some of those "validation" images were
+already seen during training. That is why `evaluate.py` defaults to `--seed 123` and
+warns that the seed has to match the one used for training.
 
 ## `train_local_45k.py`
 
-Ranija, jednostavnija varijanta za lokalno treniranje na balansiranom podskupu
-(45.000 slika po klasi, 150x150, 4 konvolutivna bloka bez duplih Conv slojeva,
-Adam lr=1e-4, bez `Rescaling` sloja). Nije verzija kojom je dobijen finalni model.
+An earlier, simpler variant for training locally on a balanced subset — 45,000
+images per class, 150×150, four convolutional blocks without the doubled Conv
+layers, Adam at lr=1e-4, and no `Rescaling` layer. This is not the version that
+produced the final model.
